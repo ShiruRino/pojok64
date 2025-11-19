@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Transaction extends Model
 {
     protected $fillable = [
-        'id_order',
+        'order_id',
         'payment_method',
         'amount_paid',
         'change',
@@ -15,6 +15,6 @@ class Transaction extends Model
     ];
     public function order()
     {
-        return $this->belongsTo(Order::class, 'id_order');
+        return $this->belongsTo(Order::class, 'order_id');
     }
 }

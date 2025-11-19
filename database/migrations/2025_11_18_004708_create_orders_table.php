@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('customer_name')->nullable();
             $table->enum('status', ['pending', 'processing', 'ready', 'completed', 'cancelled'])->default('pending');
             $table->integer('total');
+            $table->string('notes')->nullable();
             $table->timestamps();
         });
         Schema::create('detail_orders', function (Blueprint $table) {
@@ -33,6 +34,7 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::dropIfExists('detail_orders');
         Schema::dropIfExists('orders');
     }
 };

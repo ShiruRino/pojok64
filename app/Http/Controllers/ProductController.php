@@ -6,6 +6,7 @@ use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Str;
 
 class ProductController extends Controller
 {
@@ -52,8 +53,16 @@ class ProductController extends Controller
         } else {
             $imagePaths = null;
         }
+        $baseSlug = Str::slug($request->name);
+        $counter = 1;
+        $slug = '';
+        while(Product::where('slug', $baseSlug)->exists()){
+            $slug = $baseSlug . '-' . $counter;
+            $counter++;
+        }
         Product::create([
             'name' => $request->input('name'),
+            'slug' => $slug,
             'price' => $request->input('price'),
             'stock' => $request->input('stock'),
             'images' => $imagePaths,
@@ -66,7 +75,8 @@ class ProductController extends Controller
      */
     public function show(Product $product)
     {
-        return view('products.show', compact('product'));
+        $orders = $product->orders()->doesntHave('transaction')->paginate(10);
+        return view('products.show', compact('product', 'orders'));
     }
 
     /**
@@ -84,6 +94,7 @@ class ProductController extends Controller
     {
         $rules = [
             'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
             'price' => 'required|integer|min:0',
             'stock' => 'required|integer|min:0',
             'images.*' => 'image|max:2048',
@@ -110,8 +121,16 @@ class ProductController extends Controller
                 $imagePaths[] = $path;
             }
         }
+        $baseSlug = Str::slug($request->name);
+        $counter = 1;
+        $slug = '';
+        while(Product::where('slug', $baseSlug)->exists()){
+            $slug = $baseSlug . '-' . $counter;
+            $counter++;
+        }
         $product->update([
             'name' => $request->input('name'),
+            'slug' => $slug,
             'price' => $request->input('price'),
             'stock' => $request->input('stock'),
             'images' => $imagePaths,

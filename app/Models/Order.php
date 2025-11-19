@@ -10,6 +10,7 @@ class Order extends Model
         'customer_name',
         'status',
         'total',
+        'notes',
     ];
     public function products()
     {
@@ -18,5 +19,8 @@ class Order extends Model
     public function detailOrders()
     {
         return $this->hasMany(DetailOrder::class, 'order_id');
+    }
+    public function transaction(){
+        return $this->hasOne(Transaction::class, 'order_id');
     }
 }

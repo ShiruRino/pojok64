@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('title', 'Resto')</title>
+    <title>@yield('title', 'BFC ' . Auth::user()->role . ' Panel')</title>
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -35,6 +35,11 @@
 
             #mobileTogglebtn {
                 display: none;
+            }
+        }
+        @media(max-width: 375px){
+            .card-body{
+                overflow-x: scroll;
             }
         }
 
@@ -78,7 +83,7 @@
 
     <div class="offcanvas offcanvas-start bg-dark text-white" tabindex="-1" id="mobileSidebar">
         <div class="offcanvas-header">
-            <h5 class="offcanvas-title">Resto</h5>
+            <h5 class="offcanvas-title">BFC {{ucfirst(Auth::user()->role)}} Panel</h5>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
         </div>
         <div class="offcanvas-body">
