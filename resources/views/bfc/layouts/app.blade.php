@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', 'Best Friend Chicken')</title>
-    <link rel="icon" href="{{ asset('favicon.ico') }}">
+    <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
@@ -31,14 +31,21 @@
             color: white;
             padding: 0.5rem;
         }
+        .bg-bfc{
+            background-color: #a72228;
+        }
+        .btn-bfc{
+            background-color: #a72228;
+            color: white;
+        }
 
     </style>
 </head>
 <body>
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-danger px-3">
+<nav class="navbar navbar-expand-lg navbar-dark bg-bfc px-3">
     <div class="container">
-        <a class="navbar-brand fw-bold" href="{{ route('user.home') }}">BFC</a>
+        <a class="navbar-brand fw-bold d-flex align-items-center" href="{{ route('user.home') }}" style="gap: 0.5rem;"><img src="{{ asset('storage/logo/logo_white.png') }}" alt="" width="43px" height="auto" style="object-fit: cover; border-radius: 100%;"> BFC</a>
 
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar">
             <span class="navbar-toggler-icon"></span>

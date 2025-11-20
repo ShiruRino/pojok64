@@ -5,5 +5,5 @@
 <a href="{{ route('user.menu') }}">Menu</a>
 </nav>
 <nav class="nav-item">
-<a href="{{ route('user.order') }}">Order</a>
+<a href="{{ route('user.order.create') }}">Order</a>
 </nav>

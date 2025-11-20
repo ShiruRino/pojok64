@@ -53,7 +53,10 @@
                     <td>Rp{{ number_format($i->change, 0, ',', '.') }}</td>
 
                     <td class="d-flex flex-wrap" style="gap: 0.5rem;">
-                        <a href="{{ route('transactions.generateReceipt', $i->id) }}" class="btn btn-danger">Print</a>
+                        <form action="{{ route('transactions.generateReceipt', $i->id) }}" method="POST">
+                            @csrf
+                            <button type="submit" class="btn btn-danger">Print</button>
+                        </form>
                         <a href="{{ route('transactions.show', $i->id) }}" class="btn btn-primary">Show</a>
 
                         @if (Auth::user()->role == 'cashier')

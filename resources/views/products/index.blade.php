@@ -21,7 +21,11 @@
                         @foreach ($products as $product)
                             <tr>
                                 <td>{{ $loop->iteration }}</td>
+                                @if ($product->images)
                                 <td><img src="{{ url('storage/'.$product->images[0]) }}" alt="" width="50rem" height="50rem" style="object-fit:cover;"></td>
+                                @else
+                                <td>-</td>
+                                @endif
                                 <td>{{ $product->name }}</td>
                                 <td>Rp{{ number_format($product->price, 0, '', '.') }}</td>
                                 <td>{{ $product->stock }}</td>
@@ -30,7 +34,7 @@
                                     <a href="{{ route('products.edit', $product->id) }}" class="btn btn-warning">Edit</a>
                                     <form action="{{ route('products.destroy', $product->id) }}" method="POST" onsubmit="return confirm('Are you sure?')">
                                         @csrf
-                                        @method('POST')
+                                        @method('DELETE')
                                         <button type="submit" class="btn btn-danger">Delete</button>
                                     </form>
                                 </td>

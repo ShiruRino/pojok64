@@ -27,11 +27,11 @@ Route::name('user.')->group(function () {
         $product_id = Product::where('slug', $request->query('slug'))->value('id');
         $products = Product::all();
         return view('bfc.pages.order', compact('products', 'product_id'));
-    })->name('order');
+    })->name('order.create');
     Route::post('/order/store', [GuestController::class, 'store'])->name('order.store');
     Route::get('{slug}', function ($slug) {
-        $product = Product::where('slug', $slug);
-        return view('bfc.pages.order', compact('product'));
+        $product = Product::where('slug', $slug)->first();
+        return view('bfc.pages.show', compact('product'));
     })->name('show');
 });
 
@@ -53,6 +53,6 @@ Route::prefix('kantin')->group(function(){
         Route::resource('orders', OrderController::class);
         Route::resource('transactions', TransactionController::class);
         Route::post('/transactions-print-all', [TransactionController::class, 'printAll'])->name('transactions.laporan');
-Route::get('/transactions-generate-receipt/{transaction}', [TransactionController::class, 'generateReceipt'])->name('transactions.generateReceipt');
+        Route::post('/transactions-generate-receipt/{id}', [TransactionController::class, 'generateReceipt'])->name('transactions.generateReceipt');
     });
 });

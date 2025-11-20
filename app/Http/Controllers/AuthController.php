@@ -17,7 +17,7 @@ class AuthController extends Controller
         Auth::login($user);
         return redirect()->route('dashboard')->with('success', 'Login success');
     }
-    public function logout(Request $request){
+    public function logout(){
         Auth::guard('web')->logout();
         return redirect()->route('login')->with('success', 'Logout success');
     }

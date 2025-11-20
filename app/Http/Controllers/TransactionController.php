@@ -124,8 +124,9 @@ class TransactionController extends Controller
         return $pdf->download('Laporan_Keuangan_' . now()->format('d-m-Y') . '.pdf');
     }
 
-    public function generateReceipt(Transaction $transaction)
+    public function generateReceipt($id)
     {
+        $transaction = Transaction::find($id);
         $pdf = Pdf::loadView('pdf.receipt', compact('transaction'));
         return $pdf->download('receipt_transaction_' . $transaction->id . '.pdf');
     }

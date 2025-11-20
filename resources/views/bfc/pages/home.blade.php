@@ -5,11 +5,11 @@
 <div class="container py-4">
 <!-- Hero -->
 <section class="mb-4">
-    <div class="card bg-danger text-white border-0">
+    <div class="card bg-bfc text-white border-0">
         <div class="row g-0 align-items-center">
             <div class="col-12 col-lg-7">
                 <div class="card-body py-5 px-4">
-                    <h1 class="display-6 fw-bold">Best Friend Chicken</h1>
+                    <h1 class="display-6 fw-bold">Best Fried Chicken</h1>
                     <p class="lead mb-4">Crispy-nya beda, enaknya nyata.</p>
                     <div class="d-flex gap-2">
                         <a href="{{ route('user.menu') }}" class="btn btn-light btn-lg">View Menu</a>
@@ -60,7 +60,7 @@
         @if(isset($products) && $products->count())
             @foreach($products as $item)
                 <div class="col-6 col-md-4 col-lg-3">
-                    <a href="" style="color: black; text-decoration: none;">
+                    <a href="{{ route('user.show', $item->slug) }}" style="color: black; text-decoration: none;">
                         <div class="card h-100">
                             <img src="{{ $item->images ? asset('storage/'.$item->images[0]) : asset('images/placeholder.png') }}"
                                  class="card-img-top" alt="{{ $item->name }}" style="height:160px;object-fit:cover;">
@@ -69,7 +69,7 @@
                                 <p class="card-text small text-muted mb-2">{{ Str::limit($item->description, 60) }}</p>
                                 <div class="mt-auto d-flex justify-content-between align-items-center">
                                     <strong>Rp{{ number_format($item->price,0,',','.') }}</strong>
-                                    <a href="{{ route('user.order', ['slug' => $item->slug]) }}" class="btn btn-sm btn-success">Order</a>
+                                    <a href="{{ route('user.order.create', ['slug' => $item->slug]) }}" class="btn btn-sm btn-success">Order</a>
                                 </div>
                             </div>
                         </div>
@@ -98,7 +98,7 @@
 <!-- Footer CTA -->
 <section class="text-center mt-4">
     <p class="mb-2 small text-muted">Hungry now? Place your order and pick it up fast.</p>
-    <a href="#" class="btn btn-lg btn-danger">Order now</a>
+    <a href="#" class="btn btn-lg btn-bfc">Order now</a>
 </section>
 
 </div>

@@ -51,6 +51,7 @@ class OrderController extends Controller
         }
 
         $order = Order::create([
+            'code' => 'cashiercreated',
             'customer_name' => $request->customer_name,
             'status' => 'pending',
             'total' => 0,

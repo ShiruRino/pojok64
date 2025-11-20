@@ -15,7 +15,7 @@
             <div class="mb-3">
                 <label class="form-label">Order</label>
                 <select class="form-select" disabled>
-                    <option>Order #{{ $transaction->order->id }} - Rp{{ number_format($transaction->order->total_price, 0, ',', '.') }}</option>
+                    <option>Order #{{ $transaction->order->id }} - Rp{{ number_format($transaction->order->total, 0, ',', '.') }}</option>
                 </select>
             </div>
 
@@ -28,7 +28,7 @@
                         class="form-control"
                         id="total"
                         name="total"
-                        value="{{ $transaction->total }}"
+                        value="{{ $transaction->order->total }}"
                         readonly>
                 </div>
             </div>
@@ -40,9 +40,9 @@
                     <input
                         type="number"
                         class="form-control"
-                        id="paid"
-                        name="paid"
-                        value="{{ $transaction->paid }}">
+                        id="amount_paid"
+                        name="amount_paid"
+                        value="{{ $transaction->amount_paid }}">
                 </div>
             </div>
 
@@ -54,32 +54,47 @@
                         type="number"
                         class="form-control"
                         id="change"
-                        value="{{ $transaction->paid - $transaction->total }}"
+                        value="{{ $transaction->amount_paid - $transaction->order->total }}"
                         readonly>
                 </div>
             </div>
 
-            <button type="submit" class="btn btn-primary" disabled>Submit</button>
+            <div class="mb-3">
+                <label class="form-label">Payment Method</label>
+                <select name="payment_method" class="form-select">
+                    <option value="cash" {{ $transaction->payment_method == 'cash' ? 'selected' : '' }}>Cash</option>
+                    <option value="qris" {{ $transaction->payment_method == 'qris' ? 'selected' : '' }}>QRIS</option>
+                </select>
+            </div>
+
+            <button type="submit" id="submitBtn" class="btn btn-primary">Submit</button>
         </form>
     </div>
 </div>
 
 <script>
-    const paidInput = document.getElementById('paid');
+document.addEventListener('DOMContentLoaded', function () {
+
     const totalInput = document.getElementById('total');
+    const amountPaid = document.getElementById('amount_paid');
     const changeInput = document.getElementById('change');
-    const submitButton = document.querySelector('button[type="submit"]');
+    const submitBtn = document.getElementById('submitBtn');
+
+    amountPaid.addEventListener('input', calculateChange);
 
     function calculateChange() {
-        const total = Number(totalInput.value);
-        const paid = Number(paidInput.value);
-        const change = paid - total;
+        const total = Number(totalInput.value) || 0;
+        const paid = Number(amountPaid.value) || 0;
 
-        changeInput.value = change > 0 ? change : 0;
-        submitButton.disabled = !(paid >= total && total > 0);
+        const diff = paid - total;
+        changeInput.value = diff >= 0 ? diff : 0;
+
+        submitBtn.disabled = !(paid >= total && total > 0);
     }
 
-    paidInput.addEventListener('input', calculateChange);
+    calculateChange();
+});
 </script>
+
 
 @endsection

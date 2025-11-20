@@ -35,14 +35,6 @@
             </div>
 
             <div class="mb-3">
-                <label class="form-label">Payment Method</label>
-                <select name="payment_method" class="form-select">
-                    <option value="cash">Cash</option>
-                    <option value="qris">QRIS</option>
-                </select>
-            </div>
-
-            <div class="mb-3">
                 <label class="form-label">Pay</label>
                 <div class="input-group">
                     <span class="input-group-text">Rp</span>
@@ -56,6 +48,14 @@
                     <span class="input-group-text">Rp</span>
                     <input type="number" id="change" name="change" class="form-control" readonly>
                 </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Payment Method</label>
+                <select name="payment_method" class="form-select">
+                    <option value="cash">Cash</option>
+                    <option value="qris">QRIS</option>
+                </select>
             </div>
 
             <button type="submit" id="submitBtn" class="btn btn-primary" disabled>Submit</button>

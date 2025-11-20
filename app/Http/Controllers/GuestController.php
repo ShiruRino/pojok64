@@ -18,16 +18,22 @@ class GuestController extends Controller
             'products' => 'required|array',
             'products.*' => 'required|exists:products,id',
             'quantity.*' => 'required|integer|min:1',
-            'notes' => 'nullable|string|max:255'
+            'payment_method' => 'required|in:cash,qris',
+            'notes' => 'nullable|string|max:255',
+            'order_code' => 'required'
         ];
 
         $validator = Validator::make($request->all(), $rules);
         if ($validator->fails()) {
             return back()->withErrors($validator)->withInput();
         }
-
+        if(Order::where('code', $request->order_code)->doesntHave('transaction')->exists()){
+            return back()->with('error', 'An order with the same code found, please regenerate code.')->withInput();
+        }
         $order = Order::create([
+            'code' => $request->order_code,
             'customer_name' => $request->customer_name,
+            'payment_method' => $request->payment_method,
             'status' => 'pending',
             'total' => 0,
             'notes' => trim($request->notes),
@@ -37,7 +43,7 @@ class GuestController extends Controller
             $product = Product::findOrFail($productId);
             $quantity = $request->quantity[$index];
             if($product->stock < $quantity){
-                return back()->with('error', 'Insufficient stock');
+                return back()->with('error', 'Insufficient stock. Stock left: ' . $product->stock);
             }
             $subtotal = $product->price * $quantity;
 
