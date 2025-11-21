@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('code')->nullable();
             $table->string('customer_name')->nullable();
-            $table->enum('status', ['pending', 'processing', 'ready', 'completed', 'cancelled'])->default('pending');
+            $table->enum('status', ['pending', 'processing', 'ready', 'completed'])->default('pending');
             $table->enum('payment_method', ['cash', 'qris'])->nullable();
             $table->integer('total');
             $table->string('notes')->nullable();

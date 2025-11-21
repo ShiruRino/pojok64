@@ -10,7 +10,7 @@
                     <tr>
                         <th>#</th>
                         <th>Order Code</th>
-                        <th>Customer</th>
+                        <th>Status</th>
                         <th>Detail Order</th>
                         <th>Total</th>
                         <th>Notes</th>
@@ -23,7 +23,28 @@
                     <tr>
                         <td>{{ $loop->iteration }}</td>
                         <td>{{ $order->code }}</td>
-                        <td>{{ $order->customer_name }}</td>
+                        <td>
+                            {{-- @if ($order->status == 'pending' || $order->status =='processing')
+                            <span class="badge bg-warning">{{ strtoupper($order->status) }}</span>
+                            @elseif ($order->status == 'ready' || $order->status =='completed')
+                            <span class="badge bg-success">{{ strtoupper($order->status) }}</span>
+                            @elseif ($order->status == 'cancelled')
+                            <span class="badge bg-danger">{{ strtoupper($order->status) }}</span>
+                            @endif --}}
+                            <form action="{{ route('orders.update',$order->id) }}" method="POST">
+                                @csrf
+                                @method('PUT')
+                                <select name="status" class="form-select" onchange="this.form.submit()">
+
+                                    <option value="pending" {{ $order->status == 'pending' ? 'selected' : '' }}>PENDING</option>
+                                    <option value="processing" {{ $order->status == 'processing' ? 'selected' : '' }}>PROCESSING</option>
+                                    <option value="ready" {{ $order->status == 'ready' ? 'selected' : '' }}>READY</option>
+                                    <option value="completed" {{ $order->status == 'completed' ? 'selected' : '' }}>COMPLETED</option>
+
+                                </select>
+                            </form>
+
+                        </td>
                         <td>
                             <ul>
                                 @foreach ($order->detailOrders as $detail)
@@ -36,7 +57,7 @@
                         <td>{{ Str::upper($order->payment_method) ?? '-' }}</td>
                         <td class="d-flex flex-wrap" style="gap: 0.5rem">
                             <a href="{{ route('orders.show', $order->id) }}" class="btn btn-primary">Show</a>
-                            <a href="{{ route('orders.edit', $order->id) }}" class="btn btn-warning">Edit</a>
+                            {{-- <a href="{{ route('orders.edit', $order->id) }}" class="btn btn-warning">Edit</a> --}}
                             <form action="{{ route('orders.destroy', $order->id) }}" method="POST" onsubmit="return confirm('Are you sure?')">
                                 @csrf
                                 @method('DELETE')

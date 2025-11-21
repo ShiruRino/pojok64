@@ -86,18 +86,18 @@
         <tr class="total-row">
             <td>Total</td>
             <td></td>
-            <td>Rp {{ number_format($transaction->total, 0, ',', '.') }}</td>
+            <td>Rp {{ number_format($transaction->order->total, 0, ',', '.') }}</td>
         </tr>
         <tr class="total-row">
             <td>Dibayar</td>
             <td></td>
-            <td>Rp {{ number_format($transaction->paid, 0, ',', '.') }}</td>
+            <td>Rp {{ number_format($transaction->amount_paid, 0, ',', '.') }}</td>
         </tr>
         <tr class="total-row">
             <td>Kembalian</td>
             <td></td>
             <td>
-                Rp {{ number_format($transaction->paid - $transaction->total, 0, ',', '.') }}
+                Rp {{ number_format($transaction->amount_paid - $transaction->order->total, 0, ',', '.') }}
             </td>
         </tr>
     </table>

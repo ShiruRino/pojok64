@@ -19,9 +19,14 @@
                         @php
                             $total = $order->detailOrders->sum(fn($d) => $d->quantity * $d->product->price);
                         @endphp
-                        <option value="{{ $order->id }}" data-total="{{ $total }}">
-                            Order #{{ $order->id }} - Rp{{ number_format($total, 0, ',', '.') }}
+                        <option
+                            value="{{ $order->id }}"
+                            data-total="{{ $total }}"
+                            data-payment="{{ $order->payment_method }}"
+                        >
+                            Order #{{ $order->code }} - Rp{{ number_format($total, 0, ',', '.') }} - {{ strtoupper($order->status) }}
                         </option>
+
                     @endforeach
                 </select>
             </div>
@@ -73,11 +78,17 @@ document.addEventListener('DOMContentLoaded', function () {
     const amountPaid = document.getElementById('amount_paid');
     const changeInput = document.getElementById('change');
     const submitBtn = document.getElementById('submitBtn');
+    const paymentSelect = document.querySelector('select[name="payment_method"]');
 
     orderSelect.addEventListener('change', function () {
         const selected = this.options[this.selectedIndex];
+
         const total = parseFloat(selected.dataset.total || 0);
         totalInput.value = total;
+
+        const payment = selected.dataset.payment || 'cash';
+        paymentSelect.value = payment;
+
         calculateChange();
     });
 
@@ -93,6 +104,7 @@ document.addEventListener('DOMContentLoaded', function () {
         submitBtn.disabled = !(paid >= total && total > 0);
     }
 });
+
 </script>
 
 @endsection

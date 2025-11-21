@@ -9,13 +9,19 @@
     <div class="card-body">
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
-                <strong>Customer's Name:</strong> {{ $order->customer_name }}
+                <strong>Order Code:</strong> {{ $order->code }}
+            </li>
+            <li class="list-group-item">
+                <strong>Customer:</strong> {{ $order->customer_name }}
+            </li>
+            <li class="list-group-item">
+                <strong>Payment Method:</strong> {{ strtoupper($order->payment_method) }}
             </li>
             <li class="list-group-item">
                 <strong>Order Status:</strong> {{ Str::upper($order->status) }}
             </li>
             <li class="list-group-item">
-                <strong>Total:</strong> {{ number_format($order->total, 0, '', '.') }}
+                <strong>Total:</strong> Rp{{ number_format($order->total, 0, '', '.') }}
             </li>
             <li class="list-group-item">
                 <strong>Notes:</strong> {{ $order->notes }}

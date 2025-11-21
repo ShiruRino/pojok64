@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
@@ -30,6 +31,7 @@ class ProductController extends Controller
     /**
      * Store a newly created resource in storage.
      */
+
     public function store(Request $request)
     {
         $rules = [
@@ -40,40 +42,47 @@ class ProductController extends Controller
         ];
 
         $validator = Validator::make($request->all(), $rules);
-
         if ($validator->fails()) {
-            return redirect()->back()->withErrors($validator)->withInput();
+            return back()->withErrors($validator)->withInput();
         }
 
-        $imagePaths = [];
+        DB::beginTransaction();
+        try {
+            $imagePaths = [];
 
-        if($request->hasFile('images')) {
-            foreach($request->file('images') as $image) {
-                $imagePaths[] = $image->store('products', 'public');
+            if ($request->hasFile('images')) {
+                foreach ($request->file('images') as $image) {
+                    $imagePaths[] = $image->store('products', 'public');
+                }
             }
+
+            $slug = Str::slug($request->name);
+            $originalSlug = $slug;
+            $counter = 1;
+
+            while (Product::where('slug', $slug)->exists()) {
+                $slug = $originalSlug . '-' . $counter;
+                $counter++;
+            }
+
+            Product::create([
+                'name' => $request->name,
+                'description' => $request->description ?? '',
+                'slug' => $slug,
+                'price' => $request->price,
+                'stock' => $request->stock,
+                'images' => $imagePaths,
+            ]);
+
+            DB::commit();
+            return redirect()->route('products.index')->with('success', 'Product created successfully.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Something went wrong.');
         }
-
-        // slug generator
-        $slug = Str::slug($request->name);
-        $originalSlug = $slug;
-        $counter = 1;
-
-        while (Product::where('slug', $slug)->exists()) {
-            $slug = $originalSlug . '-' . $counter;
-            $counter++;
-        }
-
-        Product::create([
-            'name' => $request->name,
-            'description' => $request->description ?? '',
-            'slug' => $slug,
-            'price' => $request->price,
-            'stock' => $request->stock,
-            'images' => $imagePaths,
-        ]);
-
-        return redirect()->route('products.index')->with('success', 'Product created successfully.');
     }
+
 
 
     /**
@@ -107,58 +116,65 @@ class ProductController extends Controller
         ];
 
         $validator = Validator::make($request->all(), $rules);
-
         if ($validator->fails()) {
-            return redirect()->back()->withErrors($validator)->withInput();
+            return back()->withErrors($validator)->withInput();
         }
 
-        $imagePaths = $product->images ?? [];
+        DB::beginTransaction();
+        try {
+            $imagePaths = $product->images ?? [];
 
-        // remove selected images
-        if($request->has('remove_images')){
-            foreach($request->remove_images as $index) {
-                if(isset($imagePaths[$index])) {
-                    Storage::disk('public')->delete($imagePaths[$index]);
-                    unset($imagePaths[$index]);
+            if ($request->has('remove_images')) {
+                foreach ($request->remove_images as $index) {
+                    if (isset($imagePaths[$index])) {
+                        Storage::disk('public')->delete($imagePaths[$index]);
+                        unset($imagePaths[$index]);
+                    }
+                }
+                $imagePaths = array_values($imagePaths);
+            }
+
+            if ($request->hasFile('images')) {
+                foreach ($request->file('images') as $image) {
+                    $imagePaths[] = $image->store('products', 'public');
                 }
             }
-            $imagePaths = array_values($imagePaths);
-        }
 
-        // add new images
-        if($request->hasFile('images')) {
-            foreach($request->file('images') as $image) {
-                $imagePaths[] = $image->store('products', 'public');
-            }
-        }
+            if ($request->name !== $product->name) {
+                $slug = Str::slug($request->name);
+                $originalSlug = $slug;
+                $counter = 1;
 
-        // slug update only if name changed
-        if ($request->name !== $product->name) {
-
-            $slug = Str::slug($request->name);
-            $originalSlug = $slug;
-            $counter = 1;
-
-            while (Product::where('slug', $slug)->where('id', '!=', $product->id)->exists()) {
-                $slug = $originalSlug . '-' . $counter;
-                $counter++;
+                while (
+                    Product::where('slug', $slug)
+                    ->where('id', '!=', $product->id)
+                    ->exists()
+                ) {
+                    $slug = $originalSlug . '-' . $counter;
+                    $counter++;
+                }
+            } else {
+                $slug = $product->slug;
             }
 
-        } else {
-            $slug = $product->slug;
+            $product->update([
+                'name' => $request->name,
+                'slug' => $slug,
+                'price' => $request->price,
+                'stock' => $request->stock,
+                'description' => $request->description,
+                'images' => array_values($imagePaths),
+            ]);
+
+            DB::commit();
+            return redirect()->route('products.index')->with('success', 'Product updated successfully.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Something went wrong.');
         }
-
-        $product->update([
-            'name' => $request->name,
-            'slug' => $slug,
-            'price' => $request->price,
-            'stock' => $request->stock,
-            'description' => $request->description,
-            'images' => array_values($imagePaths),
-        ]);
-
-        return redirect()->route('products.index')->with('success', 'Product updated successfully.');
     }
+
 
 
     /**
@@ -166,12 +182,23 @@ class ProductController extends Controller
      */
     public function destroy(Product $product)
     {
-        if($product->images) {
-            foreach($product->images as $imagePath) {
-                Storage::disk('public')->delete($imagePath);
+        DB::beginTransaction();
+        try {
+            if ($product->images) {
+                foreach ($product->images as $path) {
+                    Storage::disk('public')->delete($path);
+                }
             }
+
+            $product->delete();
+
+            DB::commit();
+            return redirect()->route('products.index')->with('success', 'Product deleted successfully.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Something went wrong.');
         }
-        $product->delete();
-        return redirect()->route('products.index')->with('success', 'Product deleted successfully.');
     }
+
 }

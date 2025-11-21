@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 class TransactionController extends Controller
@@ -39,21 +40,31 @@ class TransactionController extends Controller
 
         $validator = Validator::make($request->all(), $rules);
         if ($validator->fails()) {
-            return redirect()->back()->withErrors($validator)->withInput();
+            return back()->withErrors($validator)->withInput();
         }
 
-        $order = Order::findOrFail($request->order_id);
+        DB::beginTransaction();
+        try {
+            $order = Order::findOrFail($request->order_id);
+            $order->status = 'completed';
+            $order->save();
+            Transaction::create([
+                'order_id' => $order->id,
+                'payment_method' => $request->payment_method,
+                'amount_paid' => $request->amount_paid,
+                'change' => max(0, $request->amount_paid - $order->total),
+            ]);
 
-        Transaction::create([
-            'order_id' => $order->id,
-            'payment_method' => $request->payment_method,
-            'amount_paid' => $request->amount_paid,
-            'change' => max(0, $request->amount_paid - $order->total),
-        ]);
+            DB::commit();
+            return redirect()->route('transactions.index')
+                ->with('success', 'Transaction created successfully.');
 
-        return redirect()->route('transactions.index')
-            ->with('success', 'Transaction created successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Something went wrong.');
+        }
     }
+
 
     public function show(Transaction $transaction)
     {
@@ -74,28 +85,46 @@ class TransactionController extends Controller
 
         $validator = Validator::make($request->all(), $rules);
         if ($validator->fails()) {
-            return redirect()->back()->withErrors($validator)->withInput();
+            return back()->withErrors($validator)->withInput();
         }
 
-        $orderTotal = $transaction->order->total;
+        DB::beginTransaction();
+        try {
+            $orderTotal = $transaction->order->total;
 
-        $transaction->update([
-            'payment_method' => $request->payment_method,
-            'amount_paid' => $request->amount_paid,
-            'change' => max(0, $request->amount_paid - $orderTotal),
-        ]);
+            $transaction->update([
+                'payment_method' => $request->payment_method,
+                'amount_paid' => $request->amount_paid,
+                'change' => max(0, $request->amount_paid - $orderTotal),
+            ]);
 
-        return redirect()->route('transactions.index')
-            ->with('success', 'Transaction updated successfully.');
+            DB::commit();
+            return redirect()->route('transactions.index')
+                ->with('success', 'Transaction updated successfully.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Something went wrong.');
+        }
     }
+
 
     public function destroy(Transaction $transaction)
     {
-        $transaction->delete();
+        DB::beginTransaction();
+        try {
+            $transaction->delete();
+            $transaction->order->status = 'pending';
+            DB::commit();
+            return redirect()->route('transactions.index')
+                ->with('success', 'Transaction deleted successfully.');
 
-        return redirect()->route('transactions.index')
-            ->with('success', 'Transaction deleted successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Something went wrong.');
+        }
     }
+
 
     public function printAll(Request $request)
     {

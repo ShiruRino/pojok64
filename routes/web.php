@@ -13,27 +13,48 @@ use App\Http\Controllers\TransactionController;
 
 
 Route::name('user.')->group(function () {
+
+    // Home
     Route::get('/', function () {
         $products = Product::all();
         return view('bfc.pages.home', compact('products'));
     })->name('home');
 
+    // Menu
     Route::get('/menu', function () {
         $products = Product::all();
         return view('bfc.pages.menu', compact('products'));
     })->name('menu');
 
+    // Create order
     Route::get('/order', function (Request $request) {
         $product_id = Product::where('slug', $request->query('slug'))->value('id');
         $products = Product::all();
-        return view('bfc.pages.order', compact('products', 'product_id'));
+        return view('bfc.pages.create', compact('products', 'product_id'));
     })->name('order.create');
-    Route::post('/order/store', [GuestController::class, 'store'])->name('order.store');
-    Route::get('{slug}', function ($slug) {
-        $product = Product::where('slug', $slug)->first();
+
+    Route::post('/order/store', [GuestController::class, 'store'])
+        ->name('order.store');
+
+    // Order detail page
+    Route::get('/order/{code}', function ($code) {
+        $order = Order::where('code', $code)->first();
+        return view('bfc.pages.index', compact('order'));
+    })->name('order.index');
+    Route::patch('/order/{order}/cancel', [GuestController::class, 'guestCancel'])->name('order.guestCancel');
+
+    Route::patch('/order/{order}/update-all', [GuestController::class, 'updateAllQuantities'])
+    ->name('order.updateAll');
+
+
+    // Product detail
+    Route::get('/product/{slug}', function ($slug) {
+        $product = Product::where('slug', $slug)->firstOrFail();
         return view('bfc.pages.show', compact('product'));
     })->name('show');
+
 });
+
 
 
 Route::prefix('kantin')->group(function(){

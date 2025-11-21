@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\DetailOrder;
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\DetailOrder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 class OrderController extends Controller
@@ -50,36 +51,49 @@ class OrderController extends Controller
             return back()->withErrors($validator)->withInput();
         }
 
-        $order = Order::create([
-            'code' => 'cashiercreated',
-            'customer_name' => $request->customer_name,
-            'status' => 'pending',
-            'total' => 0,
-            'notes' => trim($request->notes),
-        ]);
+        DB::beginTransaction();
+        try {
 
-        foreach ($request->products as $index => $productId) {
-            $product = Product::findOrFail($productId);
-            $quantity = $request->quantity[$index];
-            if($product->stock < $quantity){
-                return back()->with('error', 'Insufficient stock');
-            }
-            $subtotal = $product->price * $quantity;
-
-            DetailOrder::create([
-                'order_id' => $order->id,
-                'product_id' => $product->id,
-                'quantity' => $quantity,
-                'subtotal' => $subtotal,
+            $order = Order::create([
+                'code' => 'cashiercreated',
+                'customer_name' => $request->customer_name,
+                'status' => 'pending',
+                'total' => 0,
+                'notes' => trim($request->notes),
             ]);
-            $product->stock -= $quantity;
-            $product->save();
+
+            foreach ($request->products as $index => $productId) {
+                $product = Product::lockForUpdate()->findOrFail($productId);
+                $quantity = $request->quantity[$index];
+
+                if ($product->stock < $quantity) {
+                    DB::rollBack();
+                    return back()->with('error', 'Insufficient stock');
+                }
+
+                $subtotal = $product->price * $quantity;
+
+                DetailOrder::create([
+                    'order_id' => $order->id,
+                    'product_id' => $product->id,
+                    'quantity' => $quantity,
+                    'subtotal' => $subtotal,
+                ]);
+
+                $product->stock -= $quantity;
+                $product->save();
+            }
+
+            $order->total = $order->detailOrders()->sum('subtotal');
+            $order->save();
+
+            DB::commit();
+            return redirect()->route('orders.index')->with('success', 'Order created.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Something went wrong.');
         }
-
-        $order->total = $order->detailOrders()->sum('subtotal');
-        $order->save();
-
-        return redirect()->route('orders.index')->with('success', 'Order created.');
     }
 
     public function show(Order $order)
@@ -95,77 +109,110 @@ class OrderController extends Controller
 
     public function update(Request $request, Order $order)
     {
+        // $rules = [
+        //     'customer_name' => 'required|string|max:255',
+        //     'products' => 'required|array',
+        //     'products.*' => 'required|exists:products,id',
+        //     'quantity.*' => 'required|integer|min:1',
+        //     'notes' => 'nullable|string|max:255'
+        // ];
+
+        // $validator = Validator::make($request->all(), $rules);
+        // if ($validator->fails()) {
+        //     return back()->withErrors($validator)->withInput();
+        // }
+
+        // DB::beginTransaction();
+        // try {
+
+        //     foreach ($order->detailOrders as $d) {
+        //         $p = Product::lockForUpdate()->find($d->product_id);
+        //         $p->stock += $d->quantity;
+        //         $p->save();
+        //         $d->delete();
+        //     }
+
+        //     $order->customer_name = $request->customer_name;
+        //     $order->notes = trim($request->notes);
+        //     $order->total = 0;
+        //     $order->save();
+
+        //     foreach ($request->products as $index => $productId) {
+
+        //         $product = Product::lockForUpdate()->findOrFail($productId);
+        //         $quantity = $request->quantity[$index];
+
+        //         if ($product->stock < $quantity) {
+        //             DB::rollBack();
+        //             return back()->with('error', 'Insufficient stock');
+        //         }
+
+        //         $subtotal = $product->price * $quantity;
+
+        //         DetailOrder::create([
+        //             'order_id' => $order->id,
+        //             'product_id' => $product->id,
+        //             'quantity' => $quantity,
+        //             'subtotal' => $subtotal,
+        //         ]);
+
+        //         $product->stock -= $quantity;
+        //         $product->save();
+        //     }
+
+        //     $order->total = $order->detailOrders()->sum('subtotal');
+        //     $order->save();
+
+        //     DB::commit();
+        //     return redirect()->route('orders.index')->with('success', 'Order updated.');
+
+        // } catch (\Exception $e) {
+        //     DB::rollBack();
+        //     return back()->with('error', 'Something went wrong.');
+        // }
         $rules = [
-            'customer_name' => 'required|string|max:255',
-            'products' => 'required|array',
-            'products.*' => 'required|exists:products,id',
-            'quantity.*' => 'required|integer|min:1',
-            'notes' => 'nullable|string|max:255'
+            'status' => 'required|in:pending,processing,ready,completed,cancelled'
         ];
 
         $validator = Validator::make($request->all(), $rules);
 
         if ($validator->fails()) {
-            return back()->withErrors($validator)->withInput();
+            return back()->withErrors($validator);
         }
 
-        // Restore stock from old order
-        foreach ($order->detailOrders as $d) {
-            $d->product->stock += $d->quantity;
-            $d->product->save();
-            $d->delete();
-        }
+        $order->update([
+            'status' => $request->status
+        ]);
 
-        // Update main order
-        $order->customer_name = $request->customer_name;
-        $order->notes = trim($request->notes);
-        $order->total = 0;
-        $order->save();
+        return redirect()->route('orders.index')
+            ->with('success', 'Order status was updated.');
 
-        // Add new order details
-        foreach ($request->products as $index => $productId) {
-
-            $product = Product::findOrFail($productId);
-            $quantity = $request->quantity[$index];
-
-            // Check stock before reducing
-            if ($product->stock < $quantity) {
-                return back()->with('error', 'Insufficient stock');
-            }
-
-            $subtotal = $product->price * $quantity;
-
-            DetailOrder::create([
-                'order_id' => $order->id,
-                'product_id' => $product->id,
-                'quantity' => $quantity,
-                'subtotal' => $subtotal,
-            ]);
-
-            // Reduce stock
-            $product->stock -= $quantity;
-            $product->save();
-        }
-
-        // Recalculate total
-        $order->total = $order->detailOrders()->sum('subtotal');
-        $order->save();
-
-        return redirect()->route('orders.index')->with('success', 'Order updated.');
     }
+
 
 
     public function destroy(Order $order)
     {
-        if (!$order->transaction) {
-            foreach ($order->detailOrders as $d) {
-                $d->product->stock += $d->quantity;
-                $d->product->save();
+        DB::beginTransaction();
+        try {
+
+            if (!$order->transaction) {
+                foreach ($order->detailOrders as $d) {
+                    $p = Product::lockForUpdate()->find($d->product_id);
+                    $p->stock += $d->quantity;
+                    $p->save();
+                }
             }
+
+            $order->delete();
+
+            DB::commit();
+            return redirect()->route('orders.index')->with('success', 'Order deleted.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Something went wrong.');
         }
-
-        $order->delete();
-
-        return redirect()->route('orders.index')->with('success', 'Order deleted.');
     }
+
 }
